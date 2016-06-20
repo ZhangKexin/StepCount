@@ -1,0 +1,4 @@
+    StepDetector.setCurrentSetp(sp.getInt(KeyStepRecord));
+
+        initStepCountThread();
+        startStepCountService();
