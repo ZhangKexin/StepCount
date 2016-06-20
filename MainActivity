@@ -2,3 +2,71 @@
 
         initStepCountThread();
         startStepCountService();
+
+     Handler stepCountHandler = new Handler() {
+        // Handler对象用于更新当前步数,定时发送消息，调用方法查询数据用于显示？？？？？？？？？？
+        //主要接受子线程发送的数据, 并用此数据配合主线程更新UI
+        //Handler运行在主线程中(UI线程中), 它与子线程可以通过Message对象来传递数据,
+        //Handler就承担着接受子线程传过来的(子线程用sendMessage()方法传递Message对象，(里面包含数据)
+        //把这些消息放入主线程队列中，配合主线程进行更新UI。
+
+        @Override                  //这个方法是从父类/接口 继承过来的，需要重写一次
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);        // 此处可以更新UI
+            countDistance();     //调用距离方法，看一下走了多远
+            total_step = countStep();          //调用步数方法
+            Intent intent = new Intent(Constants.MAIN_GLU_STEP_COUNT);
+            intent.putExtra(Constants.MAIN_GLU_STEP_COUNT, total_step);
+            sendBroadcast(intent);
+        }
+    };
+
+    private void startStepCountService() {
+        Intent service = new Intent(this, StepCounterService.class);
+        startService(service);
+    }
+
+    private void initStepCountThread() {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                while (true) {
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if (StepCounterService.FLAG) {
+                        Message msg = new Message();
+                        stepCountHandler.sendMessage(msg);// 通知主线程
+                    }
+                }
+            }
+        }.start();
+    }
+
+    /**
+     * 计算行走的距离
+     */
+    private void countDistance() {
+        int step_length = 70;
+        double distance = 0;
+        if (StepDetector.getCurrentSetp() % 2 == 0) {
+            distance = (StepDetector.getCurrentSetp() / 2) * 3 * step_length * 0.01;
+        } else {
+            distance = ((StepDetector.getCurrentSetp() / 2) * 3 + 1) * step_length * 0.01;
+        }
+    }
+
+    /**
+     * 实际的步数
+     */
+    private int countStep() {
+//        if (StepDetector.CURRENT_SETP % 2 == 0) {
+//            total_step = StepDetector.CURRENT_SETP;
+//        } else {
+//            total_step = StepDetector.CURRENT_SETP + 1;
+//        }
+        return StepDetector.getCurrentSetp();
+    }
